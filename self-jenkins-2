@@ -16,7 +16,7 @@ pipeline{
               git branch: 'main', credentialsId: 'github' , url:'https://github.com/Nilesh151299/register-app-cicd'   
               } 
         }
-
+    
 
        stage("Build Application"){
               steps {
