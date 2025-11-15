@@ -7,7 +7,7 @@ pipeline {
     environment {
         APP_NAME = "register_app_pipeline"
         RELEASE = "1.0.0"
-        AWS_REGION = "ap-south-1"
+        AWS_REGION = "us-east-1"
         AWS_ACCOUNT_ID = "583169991743"
         ECR_REPO = "ci-cd/java_image"
     }
