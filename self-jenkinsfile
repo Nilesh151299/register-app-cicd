@@ -4,6 +4,15 @@ pipeline {
         jdk 'Java17'
         maven 'Maven3'
     }
+    environment {
+        APP_NAME = "register_app_pipeline"
+        RELEASE = "1.0.0"
+        AWS_REGION = "ap-south-1"
+        AWS_ACCOUNT_ID = "583169991743"
+        ECR_REPO = "ci-cd/java_image"
+    }
+
+
    stages{
        stage("Cleanup Workspace"){
             steps{
@@ -47,6 +56,38 @@ pipeline {
                   }
              }
        }
+      stage("Build & Push Docker Image to ECR") {
+          steps {
+               script {
+                    withAWS(credentials: 'aws-ecr-creds', region: "${AWS_REGION}") {
+
+                    // ECR Login
+                    sh """
+                        aws ecr get-login-password --region ${AWS_REGION} | \
+                        docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+                       """
+
+                    // Build Docker Image
+                    sh """
+                       docker build -t ${ECR_REPO}:latest .
+                       """
+
+                   // Tag Image
+                   sh """
+                      docker tag ${ECR_REPO}:latest ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:latest
+                      """
+
+                   // Push Image
+                    sh """
+                       docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:latest
+                       """
+                    }
+               }
+           }
+       }
+
+
+
 
 
     
