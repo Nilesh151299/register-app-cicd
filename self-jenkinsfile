@@ -56,35 +56,33 @@ pipeline {
                   }
              }
        }
-      stage("Build & Push Docker Image to ECR") {
-          steps {
-               script {
-                    withAWS(credentials: 'aws-ecr-creds', region: "${AWS_REGION}") {
+     
+       stage("Build & Push Docker Image to ECR") {
+           steps {
+              withCredentials([[
+              $class: 'AmazonWebServicesCredentialsBinding',
+              credentialsId: 'aws-cred'
+              ]]) {
+                 script {
+                      sh """
+                         aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+                         aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+                         aws configure set default.region ${AWS_REGION}
 
-                    // ECR Login
-                    sh """
-                        aws ecr get-login-password --region ${AWS_REGION} | \
-                        docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
-                       """
+                         aws ecr get-login-password --region ${AWS_REGION} | \
+                         docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
 
-                    // Build Docker Image
-                    sh """
-                       docker build -t ${ECR_REPO}:latest .
-                       """
+                         docker build -t ${ECR_REPO}:latest .
 
-                   // Tag Image
-                   sh """
-                      docker tag ${ECR_REPO}:latest ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:latest
-                      """
+                         docker tag ${ECR_REPO}:latest ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:latest
 
-                   // Push Image
-                    sh """
-                       docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:latest
-                       """
+                         docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:latest
+                         """
+                         }
                     }
                }
-           }
-       }
+          }
+
 
 
 
