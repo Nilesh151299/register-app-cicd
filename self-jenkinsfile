@@ -59,31 +59,42 @@ pipeline {
              }
        }
      
-       stage("Build & Push Docker Image to ECR") {
-           steps {
-              withCredentials([[
-              $class: 'AmazonWebServicesCredentialsBinding',
-              credentialsId: 'aws-cred'
-              ]]) {
-                 script {
-                      sh """
-                         aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-                         aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-                         aws configure set default.region ${AWS_REGION}
+	   stage("Build & Push Docker Image to ECR") {
+		    steps {
+		        withCredentials([[
+		            $class: 'AmazonWebServicesCredentialsBinding',
+		            credentialsId: 'aws-cred'
+		        ]]) {
+		            script {
+		                sh '''
+		                    aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+		                    aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+		                    aws configure set default.region ${AWS_REGION}
+		
+		                    aws ecr get-login-password --region ${AWS_REGION} | \
+		                    docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+		
+		                    # Build Image
+		                    docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+		
+		                    # Tag for ECR
+		                    docker tag ${IMAGE_NAME}:${IMAGE_TAG} \
+		                    ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}
+		
+		                    # Push Version Tag
+		                    docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}
+		
+		                    # Also push Latest
+		                    docker tag ${IMAGE_NAME}:${IMAGE_TAG} \
+		                    ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:latest
+		
+		                    docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:latest
+		                '''
+		            }
+		        }
+		    }
+		}
 
-                         aws ecr get-login-password --region ${AWS_REGION} | \
-                         docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
-
-                         docker build -t ${ECR_REPO}:latest .
-
-                         docker tag ${ECR_REPO}:latest ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:latest
-
-                         docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:latest
-                         """
-                         }
-                    }
-               }
-          }
     
          // stage("Trivy Scan") {
          //   steps {
