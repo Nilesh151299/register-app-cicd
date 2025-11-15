@@ -112,8 +112,19 @@ pipeline {
          stage ('Cleanup Artifacts') {
               steps {
                 script {
-                     sh "docker rmi ${IMAGE_NAME}:${IMAGE_TAG}"
-                     sh "docker rmi ${IMAGE_NAME}:latest"
+                     sh """
+						IMAGES_TO_CLEAN="register-app:v1 register-app:latest"
+						
+						for img in \$IMAGES_TO_CLEAN; do
+						    if docker images --format '{{.Repository}}:{{.Tag}}' | grep -q "\$img"; then
+						        docker rmi \$img
+						        echo "Removed image: \$img"
+						    else
+						        echo "Image not found: \$img"
+						    fi
+						done
+						"""
+
                   }
               }
           }
