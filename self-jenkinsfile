@@ -12,6 +12,7 @@ xpipeline {
         ECR_REPO = "ci-cd/java_image"
         IMAGE_NAME = "register-app"
         IMAGE_TAG = "v1"
+        JENKINS_API_TOKEN = credentials("JENKINS_API_TOKEN")
     }
 
 
